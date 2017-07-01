@@ -443,7 +443,7 @@ class DysonPureCoolLink:
                     "sltm": f_sleep_timer,  # sleep timer
                     "rhtm": f_standby_monitoring,  # monitor air quality
                                                    # when inactive
-                    "rstf": f_reset_filter,  #reset filter lifecycle
+                    "rstf": f_reset_filter,  # reset filter lifecycle
                     "qtar": f_quality_target,
                     "nmod": f_night_mode
                 }
@@ -472,7 +472,7 @@ class DysonPureCoolLink:
 
         self.set_fan_configuration(fan_mode, oscillation, fan_speed,
                                    night_mode, quality_target,
-                                   standby_monitoring, sleep_timer, 
+                                   standby_monitoring, sleep_timer,
                                    reset_filter)
 
     @property

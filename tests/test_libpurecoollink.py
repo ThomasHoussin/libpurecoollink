@@ -8,7 +8,7 @@ from libpurecoollink.dyson import DysonAccount, NetworkDevice, \
     DysonPureCoolLink, DysonState, DysonNotLoggedException, \
     DysonEnvironmentalSensorState
 from libpurecoollink.const import FanMode, NightMode, FanSpeed, Oscillation, \
-    FanState, QualityTarget, StandbyMonitoring as SM
+    FanState, QualityTarget, StandbyMonitoring as SM, ResetFilter
 
 
 class MockResponse:
@@ -103,6 +103,24 @@ def _mocked_send_command(*args, **kwargs):
         assert payload['data']['nmod'] == "OFF"
         assert payload['data']['oson'] == "ON"
         assert payload['data']['rstf'] == "STET"
+        assert payload['data']['qtar'] == "0004"
+        assert payload['data']['fnsp'] == "0003"
+        assert payload['data']['sltm'] == "STET"
+        assert payload['data']['rhtm'] == "ON"
+        assert payload['mode-reason'] == "LAPP"
+        assert payload['msg'] == "STATE-SET"
+        assert args[2] == 1
+
+
+def _mocked_send_command_rst_filter(*args, **kwargs):
+    assert args[0] == '475/device-id-1/command'
+    payload = json.loads(args[1])
+    if payload['msg'] == "STATE-SET":
+        assert payload['time']
+        assert payload['data']['fmod'] == "FAN"
+        assert payload['data']['nmod'] == "OFF"
+        assert payload['data']['oson'] == "ON"
+        assert payload['data']['rstf'] == "RSTF"
         assert payload['data']['qtar'] == "0004"
         assert payload['data']['fnsp'] == "0003"
         assert payload['data']['sltm'] == "STET"
@@ -487,6 +505,44 @@ class TestLibPureCoolLink(unittest.TestCase):
                          "DysonDevice(device-id-1,True,device-1,21.03.08,True"
                          ",False,475,NetworkDevice(device-1,host,1111))")
         device.disconnect()
+
+    @mock.patch('paho.mqtt.client.Client.publish',
+                side_effect=_mocked_send_command_rst_filter)
+    @mock.patch('paho.mqtt.client.Client.connect')
+    def test_set_configuration_rst_filter(self, mocked_connect,
+                                          mocked_publish):
+        device = DysonPureCoolLink({
+            "Active": True,
+            "Serial": "device-id-1",
+            "Name": "device-1",
+            "ScaleUnit": "SU01",
+            "Version": "21.03.08",
+            "LocalCredentials": "1/aJ5t52WvAfn+z+fjDuef86kQDQPefbQ6/70ZGysII1K"
+                                "e1i0ZHakFH84DZuxsSQ4KTT2vbCm7uYeTORULKLKQ==",
+            "AutoUpdate": True,
+            "NewVersionAvailable": False,
+            "ProductType": "475"
+        })
+        network_device = NetworkDevice('device-1', 'host', 1111)
+        device._add_network_device(network_device)
+        device._current_state = DysonState(open("tests/data/state.json", "r").
+                                           read())
+        device.connection_callback(True)
+        connected = device.connect(None)
+        self.assertTrue(connected)
+        self.assertEqual(mocked_connect.call_count, 1)
+        device.set_configuration(fan_mode=FanMode.FAN,
+                                 oscillation=Oscillation.OSCILLATION_ON,
+                                 fan_speed=FanSpeed.FAN_SPEED_3,
+                                 night_mode=NightMode.NIGHT_MODE_OFF,
+                                 quality_target=QualityTarget.QUALITY_NORMAL,
+                                 standby_monitoring=SM.STANDBY_MONITORING_ON,
+                                 reset_filter=ResetFilter.RESET_FILTER
+                                 )
+        self.assertEqual(mocked_publish.call_count, 2)
+        self.assertEqual(device.__repr__(),
+                         "DysonDevice(device-id-1,True,device-1,21.03.08,True"
+                         ",False,475,NetworkDevice(device-1,host,1111))")
 
     @mock.patch('paho.mqtt.client.Client.publish',
                 side_effect=_mocked_send_command_timer)
