@@ -64,16 +64,7 @@ class StandbyMonitoring(Enum):
 
 
 class ResetFilter(Enum):
-<<<<<<< HEAD
-    """Reset the filter status / new filter """
-    
-    RESET_FILTER = "RSTF"
-    DO_NOTHING = "STET"
-    
-    
-=======
     """Reset the filter status / new filter."""
 
     RESET_FILTER = "RSTF"
     DO_NOTHING = "STET"
->>>>>>> 5d7e17bed0388cfda2d3bb8fa948b8ccadf82c58
